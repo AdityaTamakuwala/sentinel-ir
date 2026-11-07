@@ -19,12 +19,16 @@ import {
   Activity,
   AlertOctagon,
   AlertTriangle,
+  ArrowRight,
+  BookOpen,
   CheckCircle2,
   Clock,
   HelpCircle,
   RefreshCw,
+  Shield,
   ShieldAlert,
   Timer,
+  X,
 } from "lucide-react";
 import { apiRequest } from "@/lib/api/generated";
 import {
@@ -46,6 +50,7 @@ const SEVERITY_COLORS: Record<string, string> = {
 export default function CommandCenterPage() {
   const [windowDays, setWindowDays] = useState<number>(30);
   const [severityFilter, setSeverityFilter] = useState<string>("");
+  const [showGuide, setShowGuide] = useState<boolean>(true);
 
   const { data, isLoading, isError, refetch, isFetching } = useQuery({
     queryKey: ["command-center", windowDays, severityFilter],
@@ -124,6 +129,19 @@ export default function CommandCenterPage() {
 
           <button
             type="button"
+            onClick={() => setShowGuide((prev) => !prev)}
+            className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium transition-colors ${
+              showGuide
+                ? "border-sky-500/50 bg-sky-500/15 text-sky-300"
+                : "border-soc-border bg-soc-surface hover:bg-soc-elevated text-soc-muted"
+            }`}
+          >
+            <BookOpen className="w-3.5 h-3.5" />
+            SOC Guide
+          </button>
+
+          <button
+            type="button"
             onClick={() => void refetch()}
             className="inline-flex items-center gap-1.5 rounded-md border border-soc-border bg-soc-surface hover:bg-soc-elevated px-3 py-1.5 text-xs font-medium"
           >
@@ -132,6 +150,96 @@ export default function CommandCenterPage() {
           </button>
         </div>
       </div>
+
+      {/* First-Time Analyst Orientation Card */}
+      {showGuide && (
+        <div className="relative rounded-xl border border-sky-500/30 bg-gradient-to-r from-sky-950/40 via-soc-surface to-soc-surface p-4 sm:p-5">
+          <button
+            onClick={() => setShowGuide(false)}
+            className="absolute top-3 right-3 text-soc-muted hover:text-soc-text p-1"
+            title="Dismiss Guide"
+          >
+            <X className="w-4 h-4" />
+          </button>
+
+          <div className="flex items-start gap-3">
+            <div className="p-2 rounded-lg bg-sky-500/10 text-sky-400 border border-sky-500/20 shrink-0 mt-0.5">
+              <Shield className="w-5 h-5" />
+            </div>
+            <div className="space-y-3 pr-6 w-full">
+              <div>
+                <h3 className="text-sm font-semibold text-white flex items-center gap-2">
+                  First Time in SENTINEL IR? Here is the 4-Step SOC Workflow
+                </h3>
+                <p className="text-xs text-soc-muted mt-1">
+                  This platform coordinates the entire security incident response lifecycle. Follow these four stages to triage, investigate, contain, and report on threats:
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <Link
+                  href="/alerts"
+                  className="rounded-lg border border-soc-border bg-soc-bg/60 hover:border-sky-500/40 p-3 transition-colors group block"
+                >
+                  <div className="flex items-center justify-between text-xs font-semibold text-sky-300 mb-1">
+                    <span>1. Triage Alarms</span>
+                    <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                  </div>
+                  <p className="text-[11px] text-soc-muted">
+                    Incoming SIEM alerts. Inspect headers, filter false positives, and promote real attacks to Incidents.
+                  </p>
+                </Link>
+
+                <Link
+                  href="/incidents"
+                  className="rounded-lg border border-soc-border bg-soc-bg/60 hover:border-amber-500/40 p-3 transition-colors group block"
+                >
+                  <div className="flex items-center justify-between text-xs font-semibold text-amber-300 mb-1">
+                    <span>2. Investigate Cases</span>
+                    <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                  </div>
+                  <p className="text-[11px] text-soc-muted">
+                    Enrich malicious IPs/hashes, map MITRE ATT&CK techniques, and preserve forensic evidence with SHA-256.
+                  </p>
+                </Link>
+
+                <Link
+                  href="/playbooks"
+                  className="rounded-lg border border-soc-border bg-soc-bg/60 hover:border-emerald-500/40 p-3 transition-colors group block"
+                >
+                  <div className="flex items-center justify-between text-xs font-semibold text-emerald-300 mb-1">
+                    <span>3. SOAR Containment</span>
+                    <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                  </div>
+                  <p className="text-[11px] text-soc-muted">
+                    Execute automated playbooks. High-impact containment actions require manager 4-eyes approval.
+                  </p>
+                </Link>
+
+                <Link
+                  href="/simulations"
+                  className="rounded-lg border border-soc-border bg-soc-bg/60 hover:border-purple-500/40 p-3 transition-colors group block"
+                >
+                  <div className="flex items-center justify-between text-xs font-semibold text-purple-300 mb-1">
+                    <span>4. Attack Simulations</span>
+                    <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                  </div>
+                  <p className="text-[11px] text-soc-muted">
+                    Launch 7 real attack drills (Brute Force, Ransomware, Exfiltration) to see live telemetry flow in.
+                  </p>
+                </Link>
+              </div>
+
+              <div className="text-[11px] text-soc-muted/80 flex items-center gap-1.5 pt-1">
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                <span>
+                  <strong>Data telemetry note:</strong> Metrics reflect real PostgreSQL queries. The system is initialized with baseline demo incidents and 637 MITRE techniques; launching a simulation injects live events.
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Primary KPI Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-8 gap-3">
