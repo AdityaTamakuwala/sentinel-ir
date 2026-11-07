@@ -61,7 +61,7 @@ sequenceDiagram
 ---
 
 ### Step 1: Authentication & Access Control
-1. Navigate to `http://localhost:3000/login`.
+1. Navigate to `http://127.0.0.1:3001/login` (or `http://localhost:3000/login`).
 2. Attempt login with invalid credentials (`alex.rivera` / `WrongPassword!`).
    - *Result:* Rejection with clear, rate-limited error banner.
 3. Login as **Alex Rivera** (`alex.rivera` / `SentinelSecure2026!`).

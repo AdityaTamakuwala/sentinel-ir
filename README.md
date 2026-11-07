@@ -116,9 +116,9 @@ docker compose up -d --build --wait
 This starts all six containers (`postgres`, `redis`, `api`, `worker`, `beat`, `web`) and awaits healthy status.
 
 ### Step 3: Access the Platform
-- **SOC Web Console:** [http://localhost:3000](http://localhost:3000)
-- **FastAPI Documentation:** [http://localhost:8000/docs](http://localhost:8000/docs)
-- **Readiness Probe:** [http://localhost:8000/health/ready](http://localhost:8000/health/ready)
+- **SOC Web Console:** [http://127.0.0.1:3001](http://127.0.0.1:3001) or [http://localhost:3000](http://localhost:3000)
+- **FastAPI Documentation:** [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+- **Readiness Probe:** [http://127.0.0.1:8000/health/ready](http://127.0.0.1:8000/health/ready)
 
 ---
 

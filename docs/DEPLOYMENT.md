@@ -40,9 +40,9 @@ docker compose up -d --build --wait
 All six containers will start and wait until their respective health checks report `healthy`.
 
 ### Step 3: Access the Platform
-- **SOC Web Console:** `http://localhost:3000`
-- **FastAPI OpenAPI Documentation:** `http://localhost:8000/docs`
-- **API Health Check:** `http://localhost:8000/health/live` and `http://localhost:8000/health/ready`
+- **SOC Web Console:** `http://127.0.0.1:3001` (or `http://localhost:3000`)
+- **FastAPI OpenAPI Documentation:** `http://127.0.0.1:8000/docs`
+- **API Health Check:** `http://127.0.0.1:8000/health/live` and `http://127.0.0.1:8000/health/ready`
 
 ---
 
