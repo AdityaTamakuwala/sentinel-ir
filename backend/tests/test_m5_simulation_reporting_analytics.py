@@ -13,12 +13,13 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.alert import Alert
-from app.models.automation import PlaybookExecution, ResponseAction
+from app.models.automation import IncidentReport, Playbook, PlaybookExecution, ResponseAction
 from app.models.base import utc_now
 from app.models.incident import Incident
 from app.models.investigation import Indicator
 from app.services.notification_dispatcher import NotificationDispatcher
 from app.services.playbook.loader import PlaybookLoader
+from app.services.reporting.collector import IncidentReportCollector
 from app.services.simulation.scenarios import SCENARIOS_CATALOG, list_available_scenarios
 from tests.conftest import login_as
 
@@ -202,7 +203,6 @@ async def test_simulation_launch_modes_and_multi_stage_correlation(
 
     # Verify 5 alerts linked to 1 incident
     apt_inc_id = uuid.UUID(apt_data["incident_id"])
-    assert apt_inc_id is not None
     alert_stmt = select(Alert).where(Alert.scenario_slug == "s07_multi_stage_attack")
     apt_alerts = (await db_session.execute(alert_stmt)).scalars().all()
     assert len(apt_alerts) == 5
