@@ -1,0 +1,155 @@
+name: sentinel-ir
+
+services:
+  postgres:
+    image: postgres:16.4-alpine
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-sentinel_ir}
+      POSTGRES_USER: ${POSTGRES_USER:-sentinel_owner}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      APP_DB_USER: ${APP_DB_USER:-sentinel_app}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./deploy/postgres/init-db.sh:/docker-entrypoint-initdb.d/01-init-db.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-sentinel_owner} -d $${POSTGRES_DB:-sentinel_ir}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+  redis:
+    image: redis:7.4-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      EVIDENCE_STORAGE_DIR: /var/lib/sentinel-ir/evidence
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/app:/app/app
+      - ./backend/alembic:/app/alembic
+      - ./backend/alembic.ini:/app/alembic.ini:ro
+      - ./backend/scripts:/app/scripts
+      - ./playbooks:/app/playbooks:ro
+      - ./data:/app/data:ro
+      - evidence_data:/var/lib/sentinel-ir/evidence
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: ["/app/entrypoint.sh", "api"]
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/health/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
+
+  worker:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      EVIDENCE_STORAGE_DIR: /var/lib/sentinel-ir/evidence
+    volumes:
+      - ./backend/app:/app/app
+      - ./playbooks:/app/playbooks:ro
+      - ./data:/app/data:ro
+      - evidence_data:/var/lib/sentinel-ir/evidence
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    command: ["/app/entrypoint.sh", "worker"]
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A app.core.celery_app:celery_app inspect ping -d celery@$$HOSTNAME >/dev/null 2>&1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 15s
+
+  beat:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./backend/app:/app/app
+      - ./playbooks:/app/playbooks:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+    command: ["/app/entrypoint.sh", "beat"]
+    healthcheck:
+      test: ["CMD-SHELL", "test -f /tmp/celerybeat.pid && kill -0 $$(cat /tmp/celerybeat.pid)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      INTERNAL_API_URL: http://api:8000
+      HOSTNAME: "0.0.0.0"
+      PORT: "3000"
+    ports:
+      - "3000:3000"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/api/healthz >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+volumes:
+  postgres_data:
+  redis_data:
+  evidence_data:
+

@@ -1,0 +1,63 @@
+id: "PB-004"
+slug: "unauthorized-access-investigation"
+name: "Privilege Escalation & Unauthorized Access Investigation"
+description: "Verify account tier and anomalous geolocation/session metadata, revoke active credentials, suspend target account with Manager approval, and escalate incident priority."
+version: 1
+category: "unauthorized_access"
+
+triggers:
+  alert_rule_ids: ["wazuh-priv-esc", "92001"]
+  incident_category: ["unauthorized_access"]
+  min_severity: "high"
+
+parameters:
+  target_username: ""
+  source_ip: ""
+  session_id: ""
+
+steps:
+  - id: "step_enrich_source_ip"
+    type: "enrich_indicator"
+    name: "Enrich Rogue Source IP Intelligence"
+    parameters:
+      ioc_type: "ip"
+      value: "{{ incident.parameters.source_ip }}"
+    on_failure: "continue"
+
+  - id: "step_revoke_tokens"
+    type: "revoke_user_sessions"
+    name: "Terminate Active Authentication Tokens"
+    parameters:
+      username: "{{ incident.parameters.target_username }}"
+    on_failure: "continue"
+
+  - id: "step_disable_account"
+    type: "disable_user"
+    name: "Suspend Target Directory Account"
+    require_approval: true
+    approval_level: "soc_manager"
+    approval_timeout_hours: 12
+    action_type: "disable_account_recommendation"
+    risk_impact: "high"
+    target_username: "{{ incident.parameters.target_username }}"
+    parameters:
+      username: "{{ incident.parameters.target_username }}"
+      reason: "Unauthorized privilege escalation observed from unknown session."
+    on_failure: "abort"
+
+  - id: "step_escalate_incident"
+    type: "escalate_incident"
+    name: "Escalate Incident Priority & Severity"
+    parameters:
+      severity: "critical"
+      priority: "p1"
+      justification: "Privileged account unauthorized access confirmed. Severity raised to CRITICAL."
+    on_failure: "continue"
+
+  - id: "step_notify_mgmt"
+    type: "send_notification"
+    name: "Notify Incident Commander and SOC Leadership"
+    parameters:
+      channel: "incident-command"
+      message: "P1 escalation: Unauthorized access detected for {{ incident.parameters.target_username }}. Account suspended."
+    on_failure: "continue"

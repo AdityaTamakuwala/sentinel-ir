@@ -1,0 +1,65 @@
+id: "PB-001"
+slug: "phishing-investigation"
+name: "Phishing Triage & Compromised Credential Response"
+description: "Automated analysis of suspicious email submissions, URL/domain threat enrichment, message quarantine, and manager-approved account suspension."
+version: 1
+category: "phishing"
+
+triggers:
+  alert_rule_ids: ["87100", "87101", "wazuh-phish-01"]
+  incident_category: ["phishing", "credential_compromise"]
+  min_severity: "medium"
+
+parameters:
+  sender_email: ""
+  sender_domain: ""
+  suspicious_url: ""
+  affected_user: ""
+
+steps:
+  - id: "step_enrich_sender_domain"
+    type: "enrich_indicator"
+    name: "Enrich Sender Domain Intelligence"
+    parameters:
+      ioc_type: "domain"
+      value: "{{ incident.parameters.sender_domain }}"
+    on_failure: "continue"
+
+  - id: "step_enrich_body_url"
+    type: "enrich_indicator"
+    name: "Enrich Suspicious Email URL"
+    parameters:
+      ioc_type: "url"
+      value: "{{ incident.parameters.suspicious_url }}"
+    on_failure: "continue"
+
+  - id: "step_quarantine_email"
+    type: "quarantine_email"
+    name: "Quarantine Malicious Message from Inbox"
+    parameters:
+      recipient: "{{ incident.parameters.affected_user }}"
+      sender: "{{ incident.parameters.sender_email }}"
+    on_failure: "continue"
+
+  - id: "step_disable_user"
+    type: "disable_user"
+    name: "Suspend Compromised User Account"
+    require_approval: true
+    approval_level: "soc_manager"
+    approval_timeout_hours: 24
+    action_type: "disable_account_recommendation"
+    risk_impact: "high"
+    target_username: "{{ incident.parameters.affected_user }}"
+    parameters:
+      username: "{{ incident.parameters.affected_user }}"
+      reason: "Account credentials compromised via verified credential phishing campaign."
+    on_failure: "abort"
+
+  - id: "step_notify_soc"
+    type: "send_notification"
+    name: "Broadcast Containment Telemetry to SOC"
+    parameters:
+      channel: "soc-alerts"
+      message: "Phishing investigation completed for {{ incident.human_id }}. Compromised user account disabled."
+    on_failure: "continue"
+

@@ -1,0 +1,9 @@
+<!-- Place inside <ossec_config> on the Wazuh Manager -->
+<integration>
+  <name>custom-sentinel-ir</name>
+  <hook_url>https://sentinel-ir.internal.example/api/v1/ingest/wazuh</hook_url>
+  <api_key>REPLACE_WITH_SENTINEL_SOURCE_API_KEY</api_key>
+  <level>7</level>
+  <alert_format>json</alert_format>
+</integration>
+

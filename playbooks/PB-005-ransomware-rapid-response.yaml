@@ -1,0 +1,73 @@
+id: "PB-005"
+slug: "ransomware-rapid-response"
+name: "Ransomware Outbreak Rapid Containment"
+description: "Immediate incident escalation, emergency manager-approved network isolation of infected hosts, termination of shadow copy deletion utilities, and perimeter C2 egress blockage."
+version: 1
+category: "ransomware"
+
+triggers:
+  alert_rule_ids: ["wazuh-ransomware-detect", "99001", "99002"]
+  incident_category: ["ransomware"]
+  min_severity: "critical"
+
+parameters:
+  target_hostname: ""
+  c2_ip: ""
+  process_name: "vssadmin.exe"
+  process_pid: 4096
+
+steps:
+  - id: "step_escalate_critical"
+    type: "escalate_incident"
+    name: "Escalate Incident to P1 CRITICAL"
+    parameters:
+      severity: "critical"
+      priority: "p1"
+      justification: "Ransomware behavior detected. Triggering emergency incident response SLA."
+    on_failure: "continue"
+
+  - id: "step_kill_tampering"
+    type: "kill_process"
+    name: "Halt Volume Shadow Copy Tampering & Encryption Process"
+    parameters:
+      hostname: "{{ incident.parameters.target_hostname }}"
+      process_name: "{{ incident.parameters.process_name }}"
+      process_pid: "{{ incident.parameters.process_pid }}"
+    on_failure: "continue"
+
+  - id: "step_isolate_host"
+    type: "isolate_endpoint"
+    name: "Emergency Network Host Quarantine"
+    require_approval: true
+    approval_level: "soc_manager"
+    approval_timeout_hours: 6
+    action_type: "isolate_endpoint_recommendation"
+    risk_impact: "critical"
+    target_hostname: "{{ incident.parameters.target_hostname }}"
+    parameters:
+      hostname: "{{ incident.parameters.target_hostname }}"
+      justification: "Active ransomware outbreak. Isolate host to prevent lateral spread across subnet."
+    on_failure: "abort"
+
+  - id: "step_block_c2"
+    type: "block_perimeter_ip"
+    name: "Block Ransomware C2 Egress IP at Firewall"
+    require_approval: true
+    approval_level: "soc_l2"
+    approval_timeout_hours: 12
+    action_type: "block_ip_recommendation"
+    risk_impact: "medium"
+    target_indicator: "{{ incident.parameters.c2_ip }}"
+    parameters:
+      ip_address: "{{ incident.parameters.c2_ip }}"
+      direction: "outbound"
+    on_failure: "abort"
+
+  - id: "step_emergency_broadcast"
+    type: "send_notification"
+    name: "Broadcast Emergency Outbreak Alert to CISO & On-Call"
+    parameters:
+      channel: "ciso-emergency"
+      message: "CRITICAL: Ransomware outbreak on {{ incident.parameters.target_hostname }}. Host isolation and C2 block enacted."
+    on_failure: "continue"
+

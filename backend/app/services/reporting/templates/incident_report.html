@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>SENTINEL IR Incident Report - {{ incident.human_id }}</title>
+<style>
+  @page {
+    size: A4 portrait;
+    margin: 20mm 15mm 20mm 15mm;
+    @top-left {
+      content: "SENTINEL IR — Enterprise Incident Response Platform";
+      font-size: 8pt;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: #718096;
+      border-bottom: 0.5pt solid #E2E8F0;
+      padding-bottom: 4px;
+    }
+    @top-right {
+      content: "CONFIDENTIAL // {{ tlp }}";
+      font-size: 8pt;
+      font-weight: bold;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: {{ tlp_color }};
+      border-bottom: 0.5pt solid #E2E8F0;
+      padding-bottom: 4px;
+    }
+    @bottom-left {
+      content: "Incident {{ incident.human_id }} | Generated: {{ collected_at }}";
+      font-size: 8pt;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: #718096;
+    }
+    @bottom-right {
+      content: "Page " counter(page) " of " counter(pages);
+      font-size: 8pt;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: #718096;
+    }
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: #1A202C;
+    background-color: #FFFFFF;
+    margin: 0;
+    padding: 0;
+    font-size: 9.5pt;
+    line-height: 1.45;
+  }
+
+  /* Watermark for simulated incidents */
+  {% if incident.is_simulated %}
+  .simulation-watermark-bar {
+    background-color: #FEF3C7;
+    border: 1.5pt dashed #D97706;
+    color: #92400E;
+    padding: 8px 12px;
+    text-align: center;
+    font-weight: 800;
+    font-size: 11pt;
+    letter-spacing: 1.5px;
+    margin-bottom: 16px;
+    border-radius: 4px;
+  }
+  {% endif %}
+
+  .header-table {
+    width: 100%;
+    margin-bottom: 16px;
+    border-bottom: 2pt solid #0F172A;
+    padding-bottom: 12px;
+  }
+
+  .report-title {
+    font-size: 20pt;
+    font-weight: 800;
+    color: #0F172A;
+    margin: 0 0 4px 0;
+    letter-spacing: -0.5px;
+  }
+
+  .report-subtitle {
+    font-size: 11pt;
+    color: #475569;
+    margin: 0;
+  }
+
+  .tlp-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    font-weight: 800;
+    font-size: 9pt;
+    border-radius: 4px;
+    color: #FFFFFF;
+    background-color: {{ tlp_color }};
+    letter-spacing: 0.5px;
+  }
+
+  .meta-grid {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 16px;
+    background-color: #F8FAFC;
+    border: 1pt solid #E2E8F0;
+    border-radius: 4px;
+  }
+
+  .meta-grid td {
+    padding: 8px 12px;
+    border: 0.5pt solid #E2E8F0;
+    vertical-align: top;
+  }
+
+  .meta-label {
+    font-size: 8pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #64748B;
+    margin-bottom: 2px;
+  }
+
+  .meta-value {
+    font-size: 10pt;
+    font-weight: 600;
+    color: #0F172A;
+  }
+
+  .severity-badge {
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 8.5pt;
+  }
+  .sev-critical { background-color: #FEE2E2; color: #991B1B; }
+  .sev-high { background-color: #FFEDD5; color: #9A3412; }
+  .sev-medium { background-color: #FEF3C7; color: #92400E; }
+  .sev-low { background-color: #E0E7FF; color: #3730A3; }
+
+  .status-badge {
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 8.5pt;
+    background-color: #E2E8F0;
+    color: #334155;
+  }
+
+  h2 {
+    font-size: 12.5pt;
+    font-weight: 700;
+    color: #0F172A;
+    border-bottom: 1.5pt solid #CBD5E1;
+    padding-bottom: 4px;
+    margin-top: 18px;
+    margin-bottom: 8px;
+    letter-spacing: -0.2px;
+  }
+
+  .callout-box {
+    background-color: #F1F5F9;
+    border-left: 3pt solid #3B82F6;
+    padding: 10px 14px;
+    margin-bottom: 14px;
+    border-radius: 0 4px 4px 0;
+  }
+
+  .callout-box p {
+    margin: 0;
+    font-size: 9.5pt;
+    color: #1E293B;
+  }
+
+  table.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 14px;
+    font-size: 8.5pt;
+  }
+
+  table.data-table th {
+    background-color: #0F172A;
+    color: #FFFFFF;
+    text-align: left;
+    padding: 6px 8px;
+    font-weight: 600;
+    font-size: 8pt;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  table.data-table td {
+    padding: 6px 8px;
+    border-bottom: 0.5pt solid #E2E8F0;
+    vertical-align: top;
+  }
+
+  table.data-table tr:nth-child(even) td {
+    background-color: #F8FAFC;
+  }
+
+  .code-font {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size: 8pt;
+    word-break: break-all;
+  }
+
+  .page-break {
+    page-break-before: always;
+  }
+
+  .signoff-box {
+    margin-top: 24px;
+    border-top: 1pt dashed #CBD5E1;
+    padding-top: 14px;
+    width: 100%;
+  }
+</style>
+</head>
+<body>
+
+{% if incident.is_simulated %}
+<div class="simulation-watermark-bar">
+  ★ SIMULATED INCIDENT DRILL — NOT A REAL-WORLD COMPROMISE ★
+</div>
+{% endif %}
+
+<table class="header-table">
+  <tr>
+    <td style="vertical-align: top;">
+      <h1 class="report-title">INCIDENT RESPONSE REPORT</h1>
+      <p class="report-subtitle">{{ incident.human_id }}: {{ incident.title }}</p>
+    </td>
+    <td style="text-align: right; vertical-align: top; width: 160px;">
+      <span class="tlp-badge">{{ tlp }}</span>
+      <div style="font-size: 8pt; color: #64748B; margin-top: 6px;">Version {{ incident.version }}</div>
+    </td>
+  </tr>
+</table>
+
+<!-- Metadata Grid -->
+<table class="meta-grid">
+  <tr>
+    <td style="width: 25%;">
+      <div class="meta-label">Status</div>
+      <div class="meta-value"><span class="status-badge">{{ incident.status }}</span></div>
+    </td>
+    <td style="width: 25%;">
+      <div class="meta-label">Severity</div>
+      <div class="meta-value">
+        <span class="severity-badge sev-{{ incident.severity }}">{{ incident.severity }}</span>
+      </div>
+    </td>
+    <td style="width: 25%;">
+      <div class="meta-label">Category</div>
+      <div class="meta-value">{{ incident.category }}</div>
+    </td>
+    <td style="width: 25%;">
+      <div class="meta-label">Risk Score</div>
+      <div class="meta-value">{{ incident.risk_score }} / 100</div>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <div class="meta-label">Incident Commander</div>
+      <div class="meta-value">{{ incident.assigned_to.username if incident.assigned_to else "Unassigned" }}</div>
+    </td>
+    <td>
+      <div class="meta-label">Detected / Created</div>
+      <div class="meta-value">{{ incident.created_at[:19] }}</div>
+    </td>
+    <td>
+      <div class="meta-label">Contained</div>
+      <div class="meta-value">{{ incident.contained_at[:19] if incident.contained_at else "In Progress" }}</div>
+    </td>
+    <td>
+      <div class="meta-label">Closed / Resolved</div>
+      <div class="meta-value">{{ incident.closed_at[:19] if incident.closed_at else (incident.resolved_at[:19] if incident.resolved_at else "Open") }}</div>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <div class="meta-label">Time to Acknowledge (MTTA)</div>
+      <div class="meta-value">{{ metrics.mtta_minutes ~ " min" if metrics.mtta_minutes is not none else "N/A" }}</div>
+    </td>
+    <td>
+      <div class="meta-label">Time to Contain (MTTC)</div>
+      <div class="meta-value">{{ metrics.mttc_minutes ~ " min" if metrics.mttc_minutes is not none else "N/A" }}</div>
+    </td>
+    <td>
+      <div class="meta-label">Time to Resolve (MTTR)</div>
+      <div class="meta-value">{{ metrics.mttr_minutes ~ " min" if metrics.mttr_minutes is not none else "N/A" }}</div>
+    </td>
+    <td>
+      <div class="meta-label">SLA Compliance</div>
+      <div class="meta-value" style="color: {{ '#16A34A' if metrics.sla_state.status == 'on_track' else '#DC2626' }};">
+        {{ metrics.sla_state.status|upper }}
+      </div>
+    </td>
+  </tr>
+</table>
+
+<!-- Executive Summary -->
+<h2>1. Executive Summary</h2>
+<div class="callout-box">
+  <p>{{ incident.executive_summary or incident.description }}</p>
+</div>
+
+<!-- Threat Intelligence Indicators of Compromise -->
+<h2>2. Indicators of Compromise (IOCs)</h2>
+{% if indicators %}
+<table class="data-table">
+  <thead>
+    <tr>
+      <th style="width: 15%;">Type</th>
+      <th style="width: 45%;">Indicator Value</th>
+      <th style="width: 20%;">Reputation</th>
+      <th style="width: 20%;">Confidence</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for ioc in indicators %}
+    <tr>
+      <td><strong>{{ ioc.ioc_type|upper }}</strong></td>
+      <td class="code-font">{{ ioc.value }}</td>
+      <td>
+        <span style="font-weight: 700; color: {{ '#DC2626' if ioc.reputation == 'malicious' else ('#D97706' if ioc.reputation == 'suspicious' else '#2563EB') }};">
+          {{ ioc.reputation|upper }}
+        </span>
+      </td>
+      <td>{{ ioc.confidence }}%</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p style="color: #64748B; font-style: italic;">No threat indicators linked to this incident.</p>
+{% endif %}
+
+<!-- MITRE ATT&CK Matrix -->
+<h2>3. MITRE ATT&CK® Tactic & Technique Coverage</h2>
+{% if mitre_techniques %}
+<table class="data-table">
+  <thead>
+    <tr>
+      <th style="width: 18%;">Technique ID</th>
+      <th style="width: 32%;">Technique Name</th>
+      <th style="width: 25%;">Tactics</th>
+      <th style="width: 25%;">Status</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for tech in mitre_techniques %}
+    <tr>
+      <td class="code-font"><strong>{{ tech.technique_id }}</strong></td>
+      <td>{{ tech.name }}</td>
+      <td>{{ tech.tactics|join(", ") }}</td>
+      <td>
+        <span style="font-weight: 700; color: {{ '#16A34A' if tech.status == 'confirmed' else '#64748B' }};">
+          {{ tech.status|upper }}
+        </span>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p style="color: #64748B; font-style: italic;">No MITRE ATT&CK techniques mapped to this incident.</p>
+{% endif %}
+
+<!-- Playbook Automation & Human Approvals -->
+<h2>4. Automation Playbooks & Response Actions</h2>
+{% if response_actions or playbook_executions %}
+  {% if playbook_executions %}
+  <p><strong>Executed Playbooks:</strong></p>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th style="width: 25%;">Playbook</th>
+        <th style="width: 15%;">Version</th>
+        <th style="width: 20%;">Trigger</th>
+        <th style="width: 20%;">Status</th>
+        <th style="width: 20%;">Execution Time</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for pb in playbook_executions %}
+      <tr>
+        <td><strong>{{ pb.playbook_name }}</strong></td>
+        <td>v{{ pb.version_number }}</td>
+        <td>{{ pb.triggered_by }}</td>
+        <td><span class="status-badge">{{ pb.status }}</span></td>
+        <td>{{ pb.started_at[:19] if pb.started_at else "N/A" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+  {% if response_actions %}
+  <p style="margin-top: 10px;"><strong>Human-Approved Containment Actions (Four-Eyes):</strong></p>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th style="width: 20%;">Action Type</th>
+        <th style="width: 25%;">Target</th>
+        <th style="width: 15%;">Risk</th>
+        <th style="width: 20%;">Approver</th>
+        <th style="width: 20%;">Outcome</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for ra in response_actions %}
+      <tr>
+        <td><strong>{{ ra.action_type }}</strong></td>
+        <td class="code-font">{{ ra.target }}</td>
+        <td><span class="severity-badge sev-{{ ra.risk_level }}">{{ ra.risk_level }}</span></td>
+        <td>
+          {% if ra.approvals %}
+            {{ ra.approvals[0].approver_username }} ({{ ra.approvals[0].decision|upper }})
+          {% else %}
+            Pending Review
+          {% endif %}
+        </td>
+        <td>
+          <span style="font-weight: 700; color: {{ '#16A34A' if ra.status == 'executed' else ('#DC2626' if ra.status == 'rejected' else '#D97706') }};">
+            {{ ra.status|upper }}
+          </span>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+{% else %}
+<p style="color: #64748B; font-style: italic;">No automated playbooks or containment actions executed.</p>
+{% endif %}
+
+<!-- Forensic Evidence & Chain of Custody -->
+<h2>5. Forensic Evidence & Cryptographic Chain of Custody</h2>
+{% if evidence %}
+<table class="data-table">
+  <thead>
+    <tr>
+      <th style="width: 28%;">File Name</th>
+      <th style="width: 14%;">Size</th>
+      <th style="width: 40%;">SHA-256 Hash</th>
+      <th style="width: 18%;">Uploaded By</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for ev in evidence %}
+    <tr>
+      <td><strong>{{ ev.file_name }}</strong></td>
+      <td>{{ (ev.file_size_bytes / 1024)|round(1) }} KB</td>
+      <td class="code-font">{{ ev.sha256_hash }}</td>
+      <td>{{ ev.uploaded_by }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p style="color: #64748B; font-style: italic;">No physical forensic artifacts preserved for this incident.</p>
+{% endif %}
+
+<!-- Investigation Timeline -->
+<h2>6. Incident Timeline of Key Events</h2>
+{% if timeline %}
+<table class="data-table">
+  <thead>
+    <tr>
+      <th style="width: 22%;">Timestamp (UTC)</th>
+      <th style="width: 18%;">Event Type</th>
+      <th style="width: 18%;">Actor</th>
+      <th style="width: 42%;">Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for ev in timeline %}
+    <tr>
+      <td class="code-font">{{ ev.created_at[:19] }}</td>
+      <td><strong>{{ ev.entry_type|upper }}</strong></td>
+      <td>{{ ev.actor_username }}</td>
+      <td>{{ ev.description }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
+<!-- Closure and Root Cause -->
+{% if incident.status in ("RESOLVED", "CLOSED") %}
+<h2>7. Post-Incident Review & Closure</h2>
+<table class="data-table">
+  <tr>
+    <td style="width: 25%; font-weight: 700;">Closure Category</td>
+    <td>{{ incident.closure_category or "Resolved Threat" }}</td>
+  </tr>
+  <tr>
+    <td style="font-weight: 700;">Closure Justification</td>
+    <td>{{ incident.closure_justification or "Containment and eradication verified by SOC leadership." }}</td>
+  </tr>
+  {% if incident.root_cause %}
+  <tr>
+    <td style="font-weight: 700;">Root Cause Analysis</td>
+    <td>{{ incident.root_cause }}</td>
+  </tr>
+  {% endif %}
+  {% if incident.recommendations_text %}
+  <tr>
+    <td style="font-weight: 700;">Hardening Recommendations</td>
+    <td>{{ incident.recommendations_text }}</td>
+  </tr>
+  {% endif %}
+</table>
+{% endif %}
+
+<!-- Sign-off Block -->
+<div class="signoff-box">
+  <table style="width: 100%;">
+    <tr>
+      <td style="width: 50%;">
+        <div style="font-size: 8pt; color: #64748B;">REPORT PREPARED BY</div>
+        <div style="font-weight: 700; font-size: 10pt; color: #0F172A;">SENTINEL IR SOC PLATFORM</div>
+        <div style="font-size: 8pt; color: #64748B;">Automated Evidence & Reporting Engine v1.0</div>
+      </td>
+      <td style="width: 50%; text-align: right;">
+        <div style="font-size: 8pt; color: #64748B;">LEAD INCIDENT COMMANDER</div>
+        <div style="font-weight: 700; font-size: 10pt; color: #0F172A;">
+          {{ incident.assigned_to.full_name or incident.assigned_to.username if incident.assigned_to else "SOC Manager On Duty" }}
+        </div>
+        <div style="font-size: 8pt; color: #64748B;">Verified & Cryptographically Signed</div>
+      </td>
+    </tr>
+  </table>
+</div>
+
+</body>
+</html>
+

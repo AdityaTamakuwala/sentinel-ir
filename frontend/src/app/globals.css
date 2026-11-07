@@ -1,0 +1,55 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --soc-bg: #080d16;
+  --soc-surface: #0e1624;
+  --soc-elevated: #142033;
+  --soc-border: #1e2d45;
+  --soc-text: #e2e8f0;
+  --soc-muted: #8b9bb4;
+  --soc-accent: #0ea5e9;
+  --soc-accent-muted: rgba(14, 165, 233, 0.14);
+  color-scheme: dark;
+}
+
+.light {
+  --soc-bg: #f1f5f9;
+  --soc-surface: #ffffff;
+  --soc-elevated: #f8fafc;
+  --soc-border: #cbd5e1;
+  --soc-text: #0f172a;
+  --soc-muted: #475569;
+  --soc-accent: #0284c7;
+  --soc-accent-muted: rgba(2, 132, 199, 0.12);
+  color-scheme: light;
+}
+
+html,
+body {
+  background-color: var(--soc-bg);
+  color: var(--soc-text);
+  min-height: 100%;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Subtle tactical scrollbars */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--soc-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--soc-border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #2b4163;
+}
+

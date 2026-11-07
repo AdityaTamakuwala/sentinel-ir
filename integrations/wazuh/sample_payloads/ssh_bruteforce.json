@@ -1,0 +1,37 @@
+{
+  "timestamp": "2026-11-07T12:14:22.410+0000",
+  "rule": {
+    "level": 10,
+    "description": "sshd: Multiple authentication failures followed by brute force threshold.",
+    "id": "5712",
+    "firedtimes": 6,
+    "mail": false,
+    "groups": ["syslog", "sshd", "authentication_failures"],
+    "mitre": {
+      "id": ["T1110.001"],
+      "tactic": ["Credential Access"],
+      "technique": ["Password Guessing"]
+    }
+  },
+  "agent": {
+    "id": "014",
+    "name": "prod-bastion-01",
+    "ip": "10.20.10.14"
+  },
+  "manager": {
+    "name": "wazuh-mgr-01"
+  },
+  "id": "1762517662.491827",
+  "full_log": "Nov  7 12:14:21 prod-bastion-01 sshd[24192]: Failed password for svc_deploy from 198.51.100.42 port 51922 ssh2",
+  "decoder": {
+    "name": "sshd",
+    "parent": "sshd"
+  },
+  "data": {
+    "srcip": "198.51.100.42",
+    "srcport": "51922",
+    "dstuser": "svc_deploy"
+  },
+  "location": "/var/log/auth.log"
+}
+

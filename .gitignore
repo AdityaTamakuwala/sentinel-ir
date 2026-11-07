@@ -1,0 +1,50 @@
+# Environment & Secrets (NEVER commit real secrets)
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+build/
+dist/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+coverage.xml
+bandit-report.json
+pip-audit-report.json
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+coverage/
+*.tsbuildinfo
+next-env.d.ts
+playwright-report/
+test-results/
+blob-report/
+
+# Local runtime storage & volumes
+storage/
+data/runtime/
+*.sqlite
+*.db
+
+# OS / Editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+

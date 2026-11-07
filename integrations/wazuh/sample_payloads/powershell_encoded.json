@@ -1,0 +1,35 @@
+{
+  "timestamp": "2026-11-07T12:25:09.118+0000",
+  "rule": {
+    "level": 12,
+    "description": "Sysmon - Event 1: Suspicious encoded PowerShell execution bypassing execution policy",
+    "id": "92052",
+    "groups": ["windows", "sysmon", "sysmon_event1"],
+    "mitre": {
+      "id": ["T1059.001", "T1027"],
+      "tactic": ["Execution", "Defense Evasion"],
+      "technique": ["PowerShell", "Obfuscated Files or Information"]
+    }
+  },
+  "agent": {
+    "id": "031",
+    "name": "fin-wkstn-04",
+    "ip": "10.20.40.31"
+  },
+  "id": "1762518309.908123",
+  "full_log": "powershell.exe -NoP -NonI -W Hidden -Exec Bypass -Enc SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQAIABOAGUAdAAuAFcAZQBiAEMAbABpAGUAbgB0ACkA",
+  "decoder": {
+    "name": "windows_eventchannel"
+  },
+  "data": {
+    "srcip": "192.0.2.88",
+    "win": {
+      "eventdata": {
+        "targetUserName": "m.patel",
+        "image": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+      }
+    }
+  },
+  "location": "EventChannel"
+}
+

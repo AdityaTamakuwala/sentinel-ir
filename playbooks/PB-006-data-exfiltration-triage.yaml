@@ -1,0 +1,54 @@
+id: "PB-006"
+slug: "data-exfiltration-triage"
+name: "Anomalous Data Exfiltration Triage & Block"
+description: "Detects outbound high-volume data exfiltration to unauthorized cloud destinations, enriches recipient destination IP, blocks egress endpoint with L2 approval, and revokes compromised credentials."
+version: 1
+category: "data_exfiltration"
+
+triggers:
+  alert_rule_ids: ["wazuh-exfil-detect", "77001"]
+  incident_category: ["data_exfiltration"]
+  min_severity: "high"
+
+parameters:
+  destination_ip: ""
+  user_account: ""
+  bytes_transferred: 0
+
+steps:
+  - id: "step_enrich_destination"
+    type: "enrich_indicator"
+    name: "Enrich Exfiltration Destination IP"
+    parameters:
+      ioc_type: "ip"
+      value: "{{ incident.parameters.destination_ip }}"
+    on_failure: "continue"
+
+  - id: "step_block_exfil_destination"
+    type: "block_perimeter_ip"
+    name: "Block Outbound Egress to Exfiltration IP"
+    require_approval: true
+    approval_level: "soc_l2"
+    approval_timeout_hours: 24
+    action_type: "block_ip_recommendation"
+    risk_impact: "low"
+    target_indicator: "{{ incident.parameters.destination_ip }}"
+    parameters:
+      ip_address: "{{ incident.parameters.destination_ip }}"
+      direction: "outbound"
+    on_failure: "abort"
+
+  - id: "step_revoke_exfil_user"
+    type: "revoke_user_sessions"
+    name: "Revoke Active Sessions for Compromised Account"
+    parameters:
+      username: "{{ incident.parameters.user_account }}"
+    on_failure: "continue"
+
+  - id: "step_notify_exfil_incident"
+    type: "send_notification"
+    name: "Notify SOC DLP Incident Queue"
+    parameters:
+      channel: "dlp-incidents"
+      message: "Exfiltration destination {{ incident.parameters.destination_ip }} blocked. Sessions revoked for {{ incident.parameters.user_account }}."
+    on_failure: "continue"
